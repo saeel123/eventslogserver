@@ -119,4 +119,27 @@ router.get('/syncevent', async (req, res) => {
 
 
 
+router.get('/event', async (req, res) => {
+  const resPerPage = req.query.limit; 
+  const page = req.query.page || 1; 
+
+  try {
+    const events = await Event.find({})
+    .skip( parseInt((resPerPage * page) - resPerPage))
+    .limit(parseInt(resPerPage));
+
+    if (!events) {
+        return res.status(404).send();
+    }
+
+    res.send(events);
+
+  } catch (e) {
+      res.status(500).send();
+  }
+});
+
+
+
+
 module.exports = router
