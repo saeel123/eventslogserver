@@ -122,18 +122,32 @@ router.get('/syncevent', async (req, res) => {
 router.get('/event', async (req, res) => {
   const resPerPage = req.query.limit; 
   const page = req.query.page || 1; 
+  const sort = {}
+  const match = {}
+
+
+  if (req.query.sortBy) {
+    const parts = req.query.sortBy.split(':')
+    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
+  }
+
+  if (req.query.verb) {
+    match.verb = req.query.verb === 'create'
+  }  
+  
+
 
   try {
     const events = await Event.find({})
     .skip( parseInt((resPerPage * page) - resPerPage))
-    .limit(parseInt(resPerPage));
+    .limit(parseInt(resPerPage))
+    // .match({verb: 'create'})
+    .sort(sort)
 
     if (!events) {
         return res.status(404).send();
     }
-
     res.send(events);
-
   } catch (e) {
       res.status(500).send();
   }
