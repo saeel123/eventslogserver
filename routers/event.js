@@ -2,39 +2,121 @@ const express = require('express')
 const Event = require('../models/event')
 const router = new express.Router()
 const fetch = require('node-fetch');
+const axios = require('axios');
 
-function checkStatus(res) {
-    if (res.ok) { 
-        parseHeader(res.headers)
-        return res.json();
+const axiosInstance = axios.create({
+    baseURL: 'https://full-stack-dev-test.myshopify.com/admin/api/2020-01',
+    headers: { 'X-Shopify-Access-Token': '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', 'Content-Type': 'application/json' },
+});
+
+
+const getRemoteEventsCount = () => {
+    return new Promise((resolve, reject) => {
+        axiosInstance.get('/events/count.json').then( response => {
+            resolve(response.data);
+         }).catch(error => {
+            return reject('issue occured while fetching count');
+         });
+    })
+}
+
+
+const checkEventsStatus = async () => {
+        const dbEventCount = await Event.count({});
+        const remoteEventCount = await getRemoteEventsCount();
+
+        if (dbEventCount === 0) {
+            return {type: 1, count: remoteEventCount.count}; //initial fetch all
+        }
+
+}
+
+const fetchRemoteEvents = async (params) => {
+    params = params || null;
+    try {
+      const response = await axiosInstance.get('/events.json', {
+        params: params
+      });
+      return response.data;
+    } catch (error) {
+      return error;
+    }
+  }
+
+
+const checkNextUrl = function (response) {
+    if (response.headers.link && response.headers.link.indexOf(`rel="next"`) > -1) {
+        try {
+          let nextLink = response.headers.link;
+          if (nextLink.indexOf(`rel="previous"`) > -1) {
+            nextLink = nextLink.substr(nextLink.indexOf(",") + 2, nextLink.length);
+          } 
+          nextLink = nextLink.substr(1, nextLink.indexOf(">") - 1);
+          callNextEventsPage(nextLink)
+            
+        } catch(ex) {
+            console.log( 'Failed to parse nextlink');
+            console.log(response.headers)
+        }
     } else {
-        throw MyCustomError(res.statusText);
+        console.log('SHOPIFY SERVICE - GETALLORDERS', 'No nextLink returned, continuing.')
+        response.status(201).send("Events Synced")
     }
 }
 
-function parseHeader(header) {
-    console.log("header");
-    console.log(header.link);
-    console.log("header");    
+const saveEvents = function (results) {
+    results.events.forEach((event) => {
+        const eventObj = {
+            subject: event.subject_type,
+            message: event.message,
+            author: event.author,
+            event_created_at: event.created_at,
+            event_id: event.id,
+            verb: event.verb
+        }
+        const newEvent = new Event(eventObj)
+        newEvent.save()
+    });
+}
+
+const callNextEventsPage = function (url) {
+    axios( {
+            method: 'get',
+            url: url,
+            headers: { 'X-Shopify-Access-Token': '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', 'Content-Type': 'application/json' }
+    })
+    .then(function (response) {
+        console.log(response);
+        
+        saveEvents(response.data);
+        checkNextUrl(response);            
+    })
+    .catch(function (error) {
+        console.log(error);
+    })
+    .finally(function () {
+        // always executed
+    }); 
 }
 
 
+
 router.get('/syncevent', async (req, res) => {
-    
+        axiosInstance.get('/events.json', {
+          params: {limit: 250}
+        })
+        .then(function (response) {
+            saveEvents(response.data);
+            checkNextUrl(response);            
+          })
+          .catch(function (error) {
+            console.log(error);
+          })
+          .finally(function () {
+            // always executed
+          });  
+});
 
-    fetch('https://full-stack-dev-test.myshopify.com/admin/api/2020-01/events.json', {
-        method: 'get',
-        headers: { 'X-Shopify-Access-Token': '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', 'Content-Type': 'application/json' },
-    })
-    .then(checkStatus)
-    .then(json => { 
-        console.log(json)
-    });
 
-
-
-
-
-})
 
 module.exports = router

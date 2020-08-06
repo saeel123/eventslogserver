@@ -13,7 +13,7 @@ const Event = mongoose.model('Event', {
     event_created_at: {
         type: Date,
     },
-    id: {
+    event_id: {
         type: String,
     },
     verb: {
