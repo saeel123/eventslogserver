@@ -1,6 +1,6 @@
 const express = require('express')
 const app = express()
-const port = process.env.PORT || 3000
+const port = process.env.PORT || 8000
 require('./db/mongoose')
 
 //router imports
@@ -10,7 +10,7 @@ app.use(function (req, res, next) {
 
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Origin', 'https://shopifyeventlogs.web.app');
+    // res.setHeader('Access-Control-Allow-Origin', 'https://shopifyeventlogs.web.app');
 
 
     // Request methods you wish to allow

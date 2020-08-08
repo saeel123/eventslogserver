@@ -123,7 +123,7 @@ router.get('/event', async (req, res) => {
   const resPerPage = req.query.limit; 
   const page = req.query.page || 1; 
   const sort = {}
-  const match = {}
+  const where_conditions = {}
 
 
   if (req.query.sortBy) {
@@ -131,23 +131,58 @@ router.get('/event', async (req, res) => {
     sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
   }
 
-  if (req.query.verb) {
-    match.verb = req.query.verb === 'create'
-  }  
+  //date filter
+  if((req.query.startDate) && (req.query.endDate)){
+    where_conditions.event_created_at = {$lt: new Date(req.query.endDate*1000).toISOString(), $gte: new Date(req.query.startDate*1000).toISOString()}
+  }
+  if((req.query.startDate) && (!req.query.endDate)){
+    where_conditions.event_created_at = {$gte: new Date(req.query.startDate*1000).toISOString()}
+  }
+  if((!req.query.startDate) && (req.query.endDate)){
+    where_conditions.event_created_at = {$lt: new Date(req.query.endDate*1000).toISOString()}
+  }
+  //verb filter
+  if(req.query.verb){
+    if(req.query.verb != "all"){
+      where_conditions.verb  =  {$regex: new RegExp('.*'+ req.query.verb.toString().trim(),"i")}
+    }
+  }
+  //message filter
+  if(req.query.message){
+    if(req.query.message != "all"){
+      where_conditions.message  =  {$regex: new RegExp('.*'+ req.query.message.toString().trim(),"i")}
+    }
+  }
+  //author filter
+  if(req.query.author){
+    if(req.query.author != "all"){
+      where_conditions.author  =  {$regex: new RegExp('.*'+ req.query.author.toString().trim(),"i")}
+    }
+  }
+
+ 
   
 
 
   try {
-    const events = await Event.find({})
+    const events = await Event.find(where_conditions)
     .skip( parseInt((resPerPage * page) - resPerPage))
     .limit(parseInt(resPerPage))
-    // .match({verb: 'create'})
     .sort(sort)
 
+    const count = await Event.count(where_conditions)
+
+    const total_count = await Event.count({})
+
+    const response = {
+      data: events,
+      count: count,
+      total_count: total_count
+    }
     if (!events) {
         return res.status(404).send();
     }
-    res.send(events);
+    res.status(200).send(response);
   } catch (e) {
       res.status(500).send();
   }
