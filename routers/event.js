@@ -9,40 +9,25 @@ const axiosInstance = axios.create({
     headers: { 'X-Shopify-Access-Token': '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', 'Content-Type': 'application/json' },
 });
 
-
-const getRemoteEventsCount = () => {
-    return new Promise((resolve, reject) => {
-        axiosInstance.get('/events/count.json').then( response => {
-            resolve(response.data);
-         }).catch(error => {
-            return reject('issue occured while fetching count');
-         });
-    })
-}
-
-
-const checkEventsStatus = async () => {
-        const dbEventCount = await Event.count({});
-        const remoteEventCount = await getRemoteEventsCount();
-
-        if (dbEventCount === 0) {
-            return {type: 1, count: remoteEventCount.count}; //initial fetch all
+const saveEvents = function (results) {
+    console.log(results.events.length);
+    results.events.forEach((event) => {
+        const eventObj = {
+            subject: event.subject_type,
+            message: event.message,
+            author: event.author,
+            event_created_at: event.created_at,
+            event_id: event.id,
+            verb: event.verb
         }
-
+       
+        
+        // const newEvent = new Event(eventObj)
+        // newEvent.save()
+    });
 }
 
-const fetchRemoteEvents = async (params) => {
-    params = params || null;
-    try {
-      const response = await axiosInstance.get('/events.json', {
-        params: params
-      });
-      return response.data;
-    } catch (error) {
-      return error;
-    }
-  }
-
+let originalRes = null
 
 const checkNextUrl = function (response) {
     if (response.headers.link && response.headers.link.indexOf(`rel="next"`) > -1) {
@@ -56,27 +41,12 @@ const checkNextUrl = function (response) {
             
         } catch(ex) {
             console.log( 'Failed to parse nextlink');
+            originalRes.status(201).send("Error occured while syn");
             console.log(response.headers)
         }
     } else {
-        console.log('SHOPIFY SERVICE - GETALLORDERS', 'No nextLink returned, continuing.')
-        response.status(201).send("Events Synced")
+        originalRes.status(201).send("All Events Synced Local Db Up to Date");
     }
-}
-
-const saveEvents = function (results) {
-    results.events.forEach((event) => {
-        const eventObj = {
-            subject: event.subject_type,
-            message: event.message,
-            author: event.author,
-            event_created_at: event.created_at,
-            event_id: event.id,
-            verb: event.verb
-        }
-        const newEvent = new Event(eventObj)
-        newEvent.save()
-    });
 }
 
 const callNextEventsPage = function (url) {
@@ -86,8 +56,6 @@ const callNextEventsPage = function (url) {
             headers: { 'X-Shopify-Access-Token': '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', 'Content-Type': 'application/json' }
     })
     .then(function (response) {
-        console.log(response);
-        
         saveEvents(response.data);
         checkNextUrl(response);            
     })
@@ -101,94 +69,62 @@ const callNextEventsPage = function (url) {
 
 
 
+
 router.get('/syncevent', async (req, res) => {
-        axiosInstance.get('/events.json', {
-          params: {limit: 250}
-        })
-        .then(function (response) {
+    originalRes = res;
+    
+    try {
+
+        const getLocalEventCount = new Promise((resolve, reject) => {
+            Event.count({}, function( err, count){
+            resolve(count);
+            });
+        });
+        
+        const getRemoteEventCount = new Promise((resolve, reject) => {
+            axiosInstance.get('/events/count.json').then( response => {
+                resolve(response.data.count);
+            }).catch(error => {
+                return reject('error occured while fetching records');
+            });
+        });
+        
+        const getFirstLocalLatestEvent = new Promise((resolve, reject) => {
+            const event = Event.findOne({})
+            .sort({'event_id' : -1 });
+            resolve(event);
+        });
+
+        let localDbEventsCount = await getLocalEventCount;
+        console.log(localDbEventsCount);
+        
+        if (localDbEventsCount === 0) {
+            const response = await axiosInstance.get('/events.json?limit=250');
             saveEvents(response.data);
-            checkNextUrl(response);            
-          })
-          .catch(function (error) {
-            console.log(error);
-          })
-          .finally(function () {
-            // always executed
-          });  
+            checkNextUrl(response, res);  
+
+        } else {
+            let remoteDbEventsCount = await getRemoteEventCount;
+            console.log(remoteDbEventsCount);
+            if (localDbEventsCount === remoteDbEventsCount) {
+                res.status(201).send("Events up to date Synced")
+            } else {
+                console.log("get first record Dump");
+                const event = await getFirstLocalLatestEvent
+                const response = await axiosInstance.get('/events.json?limit=250&since_id='+event.event_id);
+
+                if (response.data.events.length === 0) {
+                    res.status(201).send("Events up to date Synced");
+                } else {
+                    saveEvents(response.data);
+                    checkNextUrl(response, res);          
+                };
+            }
+        }
+
+    } catch (error) {
+        console.error(error);
+    }
 });
-
-
-
-router.get('/event', async (req, res) => {
-  const resPerPage = req.query.limit; 
-  const page = req.query.page || 1; 
-  const sort = {}
-  const where_conditions = {}
-
-
-  if (req.query.sortBy) {
-    const parts = req.query.sortBy.split(':')
-    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
-  }
-
-  //date filter
-  if((req.query.startDate) && (req.query.endDate)){
-    where_conditions.event_created_at = {$lt: new Date(req.query.endDate*1000).toISOString(), $gte: new Date(req.query.startDate*1000).toISOString()}
-  }
-  if((req.query.startDate) && (!req.query.endDate)){
-    where_conditions.event_created_at = {$gte: new Date(req.query.startDate*1000).toISOString()}
-  }
-  if((!req.query.startDate) && (req.query.endDate)){
-    where_conditions.event_created_at = {$lt: new Date(req.query.endDate*1000).toISOString()}
-  }
-  //verb filter
-  if(req.query.verb){
-    if(req.query.verb != "all"){
-      where_conditions.verb  =  {$regex: new RegExp('.*'+ req.query.verb.toString().trim(),"i")}
-    }
-  }
-  //message filter
-  if(req.query.message){
-    if(req.query.message != "all"){
-      where_conditions.message  =  {$regex: new RegExp('.*'+ req.query.message.toString().trim(),"i")}
-    }
-  }
-  //author filter
-  if(req.query.author){
-    if(req.query.author != "all"){
-      where_conditions.author  =  {$regex: new RegExp('.*'+ req.query.author.toString().trim(),"i")}
-    }
-  }
-
- 
-  
-
-
-  try {
-    const events = await Event.find(where_conditions)
-    .skip( parseInt((resPerPage * page) - resPerPage))
-    .limit(parseInt(resPerPage))
-    .sort(sort)
-
-    const count = await Event.count(where_conditions)
-
-    const total_count = await Event.count({})
-
-    const response = {
-      data: events,
-      count: count,
-      total_count: total_count
-    }
-    if (!events) {
-        return res.status(404).send();
-    }
-    res.status(200).send(response);
-  } catch (e) {
-      res.status(500).send();
-  }
-});
-
-
-
 
 module.exports = router

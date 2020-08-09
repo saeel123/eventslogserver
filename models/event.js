@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const Event = mongoose.model('Event', {
+const eventSchema = new mongoose.Schema({
     subject: {
         type: String,
     },
@@ -19,6 +19,9 @@ const Event = mongoose.model('Event', {
     verb: {
         type: String,
     },
+}, {
+    timestamps: true
 })
 
+const Event = mongoose.model('Event', eventSchema)
 module.exports = Event
