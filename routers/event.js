@@ -20,8 +20,6 @@ const saveEvents = function (results) {
             event_id: event.id,
             verb: event.verb
         }
-       
-        
         const newEvent = new Event(eventObj)
         newEvent.save()
     });
