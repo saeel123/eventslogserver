@@ -22,8 +22,8 @@ const saveEvents = function (results) {
         }
        
         
-        // const newEvent = new Event(eventObj)
-        // newEvent.save()
+        const newEvent = new Event(eventObj)
+        newEvent.save()
     });
 }
 
@@ -41,11 +41,11 @@ const checkNextUrl = function (response) {
             
         } catch(ex) {
             console.log( 'Failed to parse nextlink');
-            originalRes.status(201).send("Error occured while syn");
+            originalRes.status(201).send({message: 'Error occured on syn', success: false});
             console.log(response.headers)
         }
     } else {
-        originalRes.status(201).send("All Events Synced Local Db Up to Date");
+        originalRes.status(201).send({message: 'Events Synced', success: true});
     }
 }
 
@@ -107,14 +107,14 @@ router.get('/syncevent', async (req, res) => {
             let remoteDbEventsCount = await getRemoteEventCount;
             console.log(remoteDbEventsCount);
             if (localDbEventsCount === remoteDbEventsCount) {
-                res.status(201).send("Events up to date Synced")
+                res.status(201).send({message: 'Events Synced', success: true})
             } else {
                 console.log("get first record Dump");
                 const event = await getFirstLocalLatestEvent
                 const response = await axiosInstance.get('/events.json?limit=250&since_id='+event.event_id);
 
                 if (response.data.events.length === 0) {
-                    res.status(201).send("Events up to date Synced");
+                    res.status(201).send({message: 'Events Synced', success: true});
                 } else {
                     saveEvents(response.data);
                     checkNextUrl(response, res);          
