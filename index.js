@@ -1,10 +1,7 @@
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 8000
-require('./db/mongoose')
+var Config;
+Config = require('./server/config');
 
-//router imports
-const eventRouter = require('./routers/event')
+const express = require('express')
 
 app.use(function (req, res, next) {
 
@@ -27,11 +24,17 @@ app.use(function (req, res, next) {
     next();
 });
 
+// Require our routes into the application.
+router = require('./server/routes')(app);
 
-app.use(express.json());
-app.use(eventRouter)
+const port = parseInt(process.env.PORT, 10) || Config.server.port;
+app.set('port', port);
 
-//server 
-app.listen(port, () => {
-    console.log('Server is up on port ' + port)
-})
+fs = require('fs');
+
+var http = require('http');
+var server = http.createServer(app);
+
+server.listen(port);
+console.log("server listening to port: ", port);
+module.exports = app;
