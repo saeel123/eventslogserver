@@ -21,6 +21,10 @@ npm install
 ## Built With
 * [Node](https://nodejs.org/en/) - Server
 * [Express](https://github.com/expressjs) - The web framework used
+* [Mongodb](https://www.mongodb.com/) - Used NoSql MongoDb
+* [mongoosejs](https://mongoosejs.com/) - elegant mongodb object modeling for node.js
+* [heroku](https://devcenter.heroku.com/) - Hosted Backend Server on heroku free hosting
+* [mlab](https://mlab.com/) - Hosted Database on Mlab free hosting
 * [Structure] - Custom structure
 
 
