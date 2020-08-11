@@ -1,4 +1,4 @@
-var CropCompositions, ObjectId, Schema, db, schema, util;
+var ObjectId, Schema, db, schema, util;
 
 db          = require('../core/database');
 
