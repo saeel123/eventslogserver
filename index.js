@@ -1,7 +1,7 @@
 var Config;
 Config = require('./server/config');
 
-const express = require('express')
+const app = require('express')();
 
 app.use(function (req, res, next) {
 

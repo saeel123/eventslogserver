@@ -1,9 +1,11 @@
 
+var Controller, Model, config, util;
+
 Controller  = require('../core/controller');
 
-Model       = require('../models/');
+Model       = require('../models');
 
-config      = require('../config/');
+config      = require('../config');
 
 util        = require('../lib/utilities');
 

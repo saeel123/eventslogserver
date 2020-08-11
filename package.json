@@ -10,10 +10,18 @@
   "author": "saeelmacman123@gmail.com",
   "license": "ISC",
   "dependencies": {
+    "-": "0.0.1",
+    "async": "^3.2.0",
     "axios": "^0.19.2",
     "express": "^4.17.1",
-    "mongoose": "^5.9.27",
+    "g": "^2.0.1",
+    "mongoose": "^5.9.28",
     "node-fetch": "^2.6.0",
+    "underscore": "^1.10.2",
     "validator": "^13.1.1"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-apidoc-swagger": "^0.2.2"
   }
 }
