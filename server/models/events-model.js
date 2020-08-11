@@ -113,8 +113,84 @@ Events.getEvents = function(req, callback) {
 
 Events.syncEvents= function(req, callback) {
 
-    //write your sync code here
+
     
+
+    //write your sync code here
+    const { Worker, isMainThread,  workerData    } = require('worker_threads');
+
+    if(isMainThread) {
+            console.log("this is the main thread")
+
+
+            util.async.parallel([
+                function(callback) { 
+                    
+                    let workerone   = new Worker('./workerone.js',{ workerData: 'create' });
+
+                    workerone.on('message',(data) => {
+                        console.log("message",data)
+                        callback(null, data);
+                    })
+                    
+                    workerone.on('error',(err) => {
+                        console.log(err);
+                        return callback(err);
+        
+                    })
+                    workerone.on('exit',(code) => {
+                        // console.log(code)
+                        // if(code == 0){
+                        //     return callback(null, {data:"Events Syncesd"})
+                        // }
+                        if(code != 0) 
+                            console.error(`Worker stopped with exit code ${code}`)
+                    })
+                },
+                function(callback) {             
+                    let workertwo   = new Worker('./workertwo.js',{ workerData: 'destroy' });
+                    workertwo.on('message',(data) => {
+                        console.log("message",data);
+                        callback(null, data);
+                    })
+        
+                    workertwo.on('error',(err) => {
+                        console.error(err);
+                       // return callback(err);
+                    })
+
+                    
+                },
+
+                
+                function(callback) {             
+                    let workerthree = new Worker('./workerthree.js',{ workerData: 'published' });
+                    workerthree.on('message',(data) => {
+                        console.log("message",data);
+                        callback(null, data);
+                    })
+        
+                    workerthree.on('error',(err) => {
+                        console.error(err);
+                       // return callback(err);
+                    })   
+                }
+            ], function(error, results) {
+                if(error){
+                    return callback(util.formatError(error,"Error while fetching events."));
+                }else{
+                    return callback(null, {data:["Sync Completed"], count: 0})
+                }
+                // optional callback
+            });
+    
+            
+            
+
+
+
+            
+    }
 
 };
 
