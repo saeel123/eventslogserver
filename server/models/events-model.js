@@ -83,6 +83,7 @@ Events.getEvents = function(req, callback) {
             }).sort(options.sort);
         },
         function(events, callback) {
+            console.log(options.conditions)
             return Events.count(options.conditions,
             function(error, events_count) {
                 if (error) {
@@ -100,8 +101,8 @@ Events.getEvents = function(req, callback) {
                 return callback(null,
                 {
                     data                : data[0],
-                    count               :data[1],
-                    total_events_count  : total_events_count
+                    count               : data[1],
+                    total_count         : total_events_count
                 });
             });
         }

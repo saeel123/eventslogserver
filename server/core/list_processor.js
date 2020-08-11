@@ -43,7 +43,7 @@ ListProcessor = (function () {
         sorts.forEach(function (val) {
           var sort;
           val = val.trim();
-          sort = val.split('-');
+          sort = val.split(':');
           switch (sort[1].toString().toLowerCase()) {
             case "desc":
               return options.sort[sort[0].toString()] = -1;
