@@ -25,8 +25,8 @@ const saveEvents = function (results) {
                 verb: event.verb
             }
             
-            // const newEvent = new Event(eventObj)
-            // newEvent.save()
+            const newEvent = new Event(eventObj)
+            newEvent.save()
         });
     }
     
