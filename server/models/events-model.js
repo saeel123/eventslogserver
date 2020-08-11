@@ -37,7 +37,7 @@ Events = db.Database.model('events', schema);
 Events.getEvents = function(req, callback) {
 
     options = db.ListProcessor.process(req);
-    options.conditions = {}
+    options.conditions = {}    
 
     //date filter
     if((req.query.startDate) && (req.query.endDate)){
@@ -83,7 +83,6 @@ Events.getEvents = function(req, callback) {
             }).sort(options.sort);
         },
         function(events, callback) {
-            console.log(options.conditions)
             return Events.count(options.conditions,
             function(error, events_count) {
                 if (error) {
