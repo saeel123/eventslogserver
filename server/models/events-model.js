@@ -37,7 +37,7 @@ Events = db.Database.model('events', schema);
 Events.getEvents = function(req, callback) {
 
     options = db.ListProcessor.process(req);
-    options.conditions = {}
+    options.conditions = {}    
 
     //date filter
     if((req.query.startDate) && (req.query.endDate)){
@@ -100,8 +100,8 @@ Events.getEvents = function(req, callback) {
                 return callback(null,
                 {
                     data                : data[0],
-                    count               :data[1],
-                    total_events_count  : total_events_count
+                    count               : data[1],
+                    total_count         : total_events_count
                 });
             });
         }

@@ -28,9 +28,9 @@ ListProcessor = (function () {
       }
       // query offset
       if (req.query.page) {
-        options.pagination.skip = parseInt(req.query.page);
+        options.pagination.skip = parseInt((options.pagination.limit * req.query.page) - options.pagination.limit)
       } else {
-        options.pagination.skip = config.pagination.offset;
+        options.pagination.skip = parseInt((options.pagination.limit * 1) - options.pagination.limit)
       }
       // default sort order
       options.sort = {
@@ -43,7 +43,7 @@ ListProcessor = (function () {
         sorts.forEach(function (val) {
           var sort;
           val = val.trim();
-          sort = val.split('-');
+          sort = val.split(':');
           switch (sort[1].toString().toLowerCase()) {
             case "desc":
               return options.sort[sort[0].toString()] = -1;
