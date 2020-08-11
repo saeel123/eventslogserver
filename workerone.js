@@ -10,10 +10,10 @@ const axiosInstance = axios.create({
     },
 });
 
-let originalRes = null
-
-
 const saveEvents = function (results) {
+    console.log("create");
+    console.log(results.events.length);
+    
     if(results){
         results.events.forEach((event) => {
             const eventObj = {
@@ -25,11 +25,10 @@ const saveEvents = function (results) {
                 verb: event.verb
             }
             
-            const newEvent = new Event(eventObj)
-            newEvent.save()
+            const newEvent = new Event(eventObj);
+            newEvent.save();
         });
     }
-    
 }
 
 
@@ -44,28 +43,17 @@ const checkNextUrl = function (response) {
                 nextLink = nextLink.substr(1, nextLink.indexOf(">") - 1);
                 callNextEventsPage(nextLink)
             } catch (ex) {
-                // originalRes.status(201).send({
-                //     message: 'Error occured on syn',
-                //     success: false
-                // });
                 parentPort.postMessage({ data: workerData,status : 'Done with '+workerData+' sync' })
-                
-
             }
         } else {
             parentPort.postMessage({ data: workerData,status : 'Done with '+workerData+' sync' })
-            
-
         }
     }
-    
 }   
     
 
 const main = async function () {
-
     try {
-
         const getLocalEventCount = new Promise((resolve, reject) => {
             Event.count({}, function (err, count) {
                 resolve(count);
@@ -92,7 +80,6 @@ const main = async function () {
 
         if (localDbEventsCount === 0) {
             const response1 = await axiosInstance.get('/events.json?limit=250&verb='+workerData);
-            console.log(response1)
             saveEvents(response1.data);
             checkNextUrl(response1);
 
@@ -101,17 +88,13 @@ const main = async function () {
             if (localDbEventsCount === remoteDbEventsCount) {
                 parentPort.postMessage({ data: workerData, status : 'Done with '+workerData+' sync' })
                 
-
-
             } else {
                 const event = await getFirstLocalLatestEvent
-                const response = await axiosInstance.get('/events.json?limit=250&since_id=' + event.event_id);
+                const response = await axiosInstance.get('/events.json?limit=250&since_id=' + event.event_id + '&verb='+workerData);
 
                 if (response.data.events.length === 0) {
                     parentPort.postMessage({ data: workerData,status : 'Done with '+workerData+' sync' })
                     
-
-
                 } else {
                     saveEvents(response.data);
                     checkNextUrl(response);
@@ -123,18 +106,8 @@ const main = async function () {
         console.error(error);
     }
 }
-    
-
-
-
-
-
 
 const callNextEventsPage = function (url) {
-    console.log("next");
-    console.log(url);
-
-    
     axios({
             method: 'get',
             url: url,
