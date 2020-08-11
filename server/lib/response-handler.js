@@ -42,12 +42,13 @@ ResponseHandler = (function() {
   };
 
   responseStructure = function(data) {
-    var ref, ref1, ref2, ref3;
+    var ref, ref1, ref2, ref3, ref4;
     return {
       success: (ref = data.success) != null ? ref : false,
       data: (ref1 = data.data) != null ? ref1 : [],
       count: (ref2 = data.count) != null ? ref2 : 0,
-      error: (ref3 = data.error) != null ? ref3 : []
+      error: (ref3 = data.error) != null ? ref3 : [],
+      total_count: (ref4 = data.total_count) != null ? ref4 : 0,
     };
   };
 
